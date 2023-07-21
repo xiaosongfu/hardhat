@@ -1,5 +1,13 @@
 # hardhat
 
+## 2.17.1
+
+### Patch Changes
+
+- 8f50ab814: Removed the `abort-controller` dependency as it's not longer needed. Thanks @orlandoortegajr!
+- 9fe89ef96: Fixed a bug caused by nodes returning 429 responses without a `Retry-After` header (thanks @kowalski!)
+- 6390230b7: Added logic to throw an error when the debug_traceTransaction method is called with a tracer parameter that is not supported.
+
 ## 2.17.0
 
 ### Minor Changes
