@@ -694,7 +694,7 @@ mod tests {
                 .await
                 .expect("should have succeeded");
 
-            assert_eq!(block.number, block_number);
+            assert_eq!(block.number, Some(block_number));
             assert_eq!(block.transactions.len(), 102);
         }
 
@@ -727,7 +727,7 @@ mod tests {
                 .await
                 .expect("should have succeeded");
 
-            assert_eq!(block.number, block_number);
+            assert_eq!(block.number, Some(block_number));
             assert_eq!(block.transactions.len(), 102);
         }
 
@@ -1103,7 +1103,7 @@ mod tests {
             );
             assert_eq!(receipt.transaction_hash, hash);
             assert_eq!(receipt.transaction_index, 136);
-            assert_eq!(receipt.transaction_type, Some(0));
+            assert_eq!(receipt.transaction_type, 0);
         }
 
         #[tokio::test]
