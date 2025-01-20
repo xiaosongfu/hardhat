@@ -1,3 +1,4 @@
+import type EthersT from "ethers";
 import { AssertionError } from "chai";
 
 import { isBigNumber, normalizeToBigInt } from "hardhat/common";
@@ -49,47 +50,60 @@ export function anyUint(i: any): boolean {
 
 export function supportWithArgs(
   Assertion: Chai.AssertionStatic,
-  utils: Chai.ChaiUtils
+  chaiUtils: Chai.ChaiUtils
 ) {
   Assertion.addMethod("withArgs", function (this: any, ...expectedArgs: any[]) {
-    const { emitCalled } = validateInput.call(this, utils);
+    const { emitCalled } = validateInput.call(this, chaiUtils);
 
-    const promise = this.then === undefined ? Promise.resolve() : this;
+    const { isAddressable } = require("ethers") as typeof EthersT;
 
-    const onSuccess = () => {
+    // Resolve arguments to their canonical form:
+    // - Addressable → address
+    const resolveArgument = (arg: any) =>
+      isAddressable(arg) ? arg.getAddress() : arg;
+
+    const onSuccess = (resolvedExpectedArgs: any[]) => {
       if (emitCalled) {
-        return emitWithArgs(this, Assertion, utils, expectedArgs, onSuccess);
+        return emitWithArgs(
+          this,
+          Assertion,
+          chaiUtils,
+          resolvedExpectedArgs,
+          onSuccess
+        );
       } else {
         return revertedWithCustomErrorWithArgs(
           this,
           Assertion,
-          utils,
-          expectedArgs,
+          chaiUtils,
+          resolvedExpectedArgs,
           onSuccess
         );
       }
     };
 
-    const derivedPromise = promise.then(onSuccess);
+    const promise = (this.then === undefined ? Promise.resolve() : this)
+      .then(() => Promise.all(expectedArgs.map(resolveArgument)))
+      .then(onSuccess);
 
-    this.then = derivedPromise.then.bind(derivedPromise);
-    this.catch = derivedPromise.catch.bind(derivedPromise);
+    this.then = promise.then.bind(promise);
+    this.catch = promise.catch.bind(promise);
     return this;
   });
 }
 
 function validateInput(
   this: any,
-  utils: Chai.ChaiUtils
+  chaiUtils: Chai.ChaiUtils
 ): { emitCalled: boolean } {
   try {
     if (Boolean(this.__flags.negate)) {
       throw new Error("Do not combine .not. with .withArgs()");
     }
 
-    const emitCalled = utils.flag(this, EMIT_CALLED) === true;
+    const emitCalled = chaiUtils.flag(this, EMIT_CALLED) === true;
     const revertedWithCustomErrorCalled =
-      utils.flag(this, REVERTED_WITH_CUSTOM_ERROR_CALLED) === true;
+      chaiUtils.flag(this, REVERTED_WITH_CUSTOM_ERROR_CALLED) === true;
 
     if (!emitCalled && !revertedWithCustomErrorCalled) {
       throw new Error(
@@ -105,7 +119,7 @@ function validateInput(
     return { emitCalled };
   } catch (e) {
     // signal that validation failed to allow the matchers to finish early
-    utils.flag(this, ASSERTION_ABORTED, true);
+    chaiUtils.flag(this, ASSERTION_ABORTED, true);
 
     // discard subject since it could potentially be a rejected promise
     Promise.resolve(this._obj).catch(() => {});

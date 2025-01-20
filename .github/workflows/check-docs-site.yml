@@ -3,29 +3,34 @@ name: Check Docs Site
 on:
   push:
     branches:
-      - "fr/**"
+      - main
+    paths:
+      - ".github/workflows/check-docs-site.yml"
+      - "docs/**"
+      - "packages/**"
+  pull_request:
+    paths:
+      - ".github/workflows/check-docs-site.yml"
+      - "docs/**"
+      - "packages/**"
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  build:
+    name: Build Docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: 16
-          cache: yarn
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
       - name: Install
-        run: yarn --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
       - name: Install Docs
-        run: cd docs && yarn
-      - name: lint
-        run: cd docs && yarn lint
-      - name: Build
-        run: cd docs && yarn build
-      - name: Storybook
-        run: cd docs && yarn build-storybook
+        working-directory: docs/
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Build Docs
+        working-directory: docs/
+        run: pnpm build

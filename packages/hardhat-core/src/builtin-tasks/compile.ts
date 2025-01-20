@@ -1,5 +1,5 @@
 import os from "os";
-import chalk from "chalk";
+import picocolors from "picocolors";
 import debug from "debug";
 import fsExtra from "fs-extra";
 import semver from "semver";
@@ -40,6 +40,7 @@ import { getFullyQualifiedName } from "../utils/contract-names";
 import { localPathToSourceName } from "../utils/source-names";
 
 import { getAllFilesMatching } from "../internal/util/fs-utils";
+import { getEvmVersionFromSolcVersion } from "../internal/solidity/compiler/solc-info";
 import {
   TASK_COMPILE,
   TASK_COMPILE_GET_COMPILATION_TASKS,
@@ -74,20 +75,16 @@ import {
   TASK_COMPILE_SOLIDITY_RUN_SOLC,
   TASK_COMPILE_SOLIDITY_RUN_SOLCJS,
   TASK_COMPILE_TRANSFORM_IMPORT_NAME,
+  TASK_COMPILE_GET_REMAPPINGS,
 } from "./task-names";
 import {
   getSolidityFilesCachePath,
   SolidityFilesCache,
 } from "./utils/solidity-files-cache";
 
-type ArtifactsEmittedPerFile = Array<{
-  file: taskTypes.ResolvedFile;
-  artifactsEmitted: string[];
-}>;
-
 type ArtifactsEmittedPerJob = Array<{
   compilationJob: CompilationJob;
-  artifactsEmittedPerFile: ArtifactsEmittedPerFile;
+  artifactsEmittedPerFile: taskTypes.ArtifactsEmittedPerFile;
 }>;
 
 function isConsoleLogError(error: any): boolean {
@@ -161,13 +158,26 @@ subtask(TASK_COMPILE_SOLIDITY_READ_FILE)
   .addParam("absolutePath", undefined, undefined, types.string)
   .setAction(
     async ({ absolutePath }: { absolutePath: string }): Promise<string> => {
-      return fsExtra.readFile(absolutePath, {
-        encoding: "utf8",
-      });
+      try {
+        return await fsExtra.readFile(absolutePath, {
+          encoding: "utf8",
+        });
+      } catch (e) {
+        if (fsExtra.lstatSync(absolutePath).isDirectory()) {
+          throw new HardhatError(ERRORS.GENERAL.INVALID_READ_OF_DIRECTORY, {
+            absolutePath,
+          });
+        }
+
+        // eslint-disable-next-line @nomicfoundation/hardhat-internal-rules/only-hardhat-error
+        throw e;
+      }
     }
   );
 
 /**
+ * DEPRECATED: This subtask is deprecated and will be removed in the future.
+ *
  * This task transform the string literal in an import directive.
  * By default it does nothing, but it can be overriden by plugins.
  */
@@ -178,6 +188,16 @@ subtask(TASK_COMPILE_TRANSFORM_IMPORT_NAME)
       return importName;
     }
   );
+
+/**
+ * This task returns a Record<string, string> representing remappings to be used
+ * by the resolver.
+ */
+subtask(TASK_COMPILE_GET_REMAPPINGS).setAction(
+  async (): Promise<Record<string, string>> => {
+    return {};
+  }
+);
 
 /**
  * Receives a list of source names and returns a dependency graph. This task
@@ -202,13 +222,18 @@ subtask(TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH)
       { config, run }
     ): Promise<taskTypes.DependencyGraph> => {
       const parser = new Parser(solidityFilesCache);
+      const remappings = await run(TASK_COMPILE_GET_REMAPPINGS);
       const resolver = new Resolver(
         rootPath ?? config.paths.root,
         parser,
+        remappings,
         (absolutePath: string) =>
           run(TASK_COMPILE_SOLIDITY_READ_FILE, { absolutePath }),
         (importName: string) =>
-          run(TASK_COMPILE_TRANSFORM_IMPORT_NAME, { importName })
+          run(TASK_COMPILE_TRANSFORM_IMPORT_NAME, {
+            importName,
+            deprecationCheck: true,
+          })
       );
 
       const resolvedFiles = await Promise.all(
@@ -320,7 +345,7 @@ subtask(TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOBS)
  * Receives a list of compilation jobs and returns a new list where some of
  * the compilation jobs might've been removed.
  *
- * This task can be overriden to change the way the cache is used, or to use
+ * This task can be overridden to change the way the cache is used, or to use
  * a different approach to filtering out compilation jobs.
  */
 subtask(TASK_COMPILE_SOLIDITY_FILTER_COMPILATION_JOBS)
@@ -555,25 +580,25 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD)
         compilersCache
       );
 
-      const isCompilerDownloaded = await downloader.isCompilerDownloaded(
-        solcVersion
+      await downloader.downloadCompiler(
+        solcVersion,
+        // callback called before compiler download
+        async (isCompilerDownloaded: boolean) => {
+          await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_START, {
+            solcVersion,
+            isCompilerDownloaded,
+            quiet,
+          });
+        },
+        // callback called after compiler download
+        async (isCompilerDownloaded: boolean) => {
+          await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_END, {
+            solcVersion,
+            isCompilerDownloaded,
+            quiet,
+          });
+        }
       );
-
-      if (!isCompilerDownloaded) {
-        await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_START, {
-          solcVersion,
-          isCompilerDownloaded,
-          quiet,
-        });
-
-        await downloader.downloadCompiler(solcVersion);
-
-        await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_END, {
-          solcVersion,
-          isCompilerDownloaded,
-          quiet,
-        });
-      }
 
       const compiler = await downloader.getCompiler(solcVersion);
 
@@ -590,24 +615,25 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD)
         compilersCache
       );
 
-      const isWasmCompilerDownloader =
-        await wasmDownloader.isCompilerDownloaded(solcVersion);
-
-      if (!isWasmCompilerDownloader) {
-        await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_START, {
-          solcVersion,
-          isCompilerDownloaded,
-          quiet,
-        });
-
-        await wasmDownloader.downloadCompiler(solcVersion);
-
-        await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_END, {
-          solcVersion,
-          isCompilerDownloaded,
-          quiet,
-        });
-      }
+      await wasmDownloader.downloadCompiler(
+        solcVersion,
+        async (isCompilerDownloaded: boolean) => {
+          // callback called before compiler download
+          await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_START, {
+            solcVersion,
+            isCompilerDownloaded,
+            quiet,
+          });
+        },
+        // callback called after compiler download
+        async (isCompilerDownloaded: boolean) => {
+          await run(TASK_COMPILE_SOLIDITY_LOG_DOWNLOAD_COMPILER_END, {
+            solcVersion,
+            isCompilerDownloaded,
+            quiet,
+          });
+        }
+      );
 
       const wasmCompiler = await wasmDownloader.getCompiler(solcVersion);
 
@@ -648,9 +674,26 @@ subtask(TASK_COMPILE_SOLIDITY_RUN_SOLCJS)
 subtask(TASK_COMPILE_SOLIDITY_RUN_SOLC)
   .addParam("input", undefined, undefined, types.any)
   .addParam("solcPath", undefined, undefined, types.string)
+  .addOptionalParam("solcVersion", undefined, undefined, types.string)
   .setAction(
-    async ({ input, solcPath }: { input: CompilerInput; solcPath: string }) => {
-      const compiler = new NativeCompiler(solcPath);
+    async ({
+      input,
+      solcPath,
+      solcVersion,
+    }: {
+      input: CompilerInput;
+      solcPath: string;
+      solcVersion?: string;
+    }) => {
+      if (solcVersion !== undefined && semver.valid(solcVersion) === null) {
+        throw new HardhatError(ERRORS.ARGUMENTS.INVALID_VALUE_FOR_TYPE, {
+          value: solcVersion,
+          name: "solcVersion",
+          type: "string",
+        });
+      }
+
+      const compiler = new NativeCompiler(solcPath, solcVersion);
 
       return compiler.compile(input);
     }
@@ -714,6 +757,7 @@ subtask(TASK_COMPILE_SOLIDITY_COMPILE_SOLC)
         output = await run(TASK_COMPILE_SOLIDITY_RUN_SOLC, {
           input,
           solcPath: solcBuild.compilerPath,
+          solcVersion,
         });
       }
 
@@ -756,11 +800,15 @@ subtask(TASK_COMPILE_SOLIDITY_LOG_COMPILATION_ERRORS)
           getFormattedInternalCompilerErrorMessage(error) ??
           error.formattedMessage;
 
-        console.error(errorMessage.replace(/^\w+:/, (t) => chalk.red.bold(t)));
+        console.error(
+          errorMessage.replace(/^\w+:/, (t) =>
+            picocolors.bold(picocolors.red(t))
+          )
+        );
       } else {
         console.warn(
           (error.formattedMessage as string).replace(/^\w+:/, (t) =>
-            chalk.yellow.bold(t)
+            picocolors.bold(picocolors.yellow(t))
           )
         );
       }
@@ -769,7 +817,7 @@ subtask(TASK_COMPILE_SOLIDITY_LOG_COMPILATION_ERRORS)
     const hasConsoleErrors: boolean = output.errors.some(isConsoleLogError);
     if (hasConsoleErrors) {
       console.error(
-        chalk.red(
+        picocolors.red(
           `The console.log call you made isn’t supported. See https://hardhat.org/console-log for the list of supported methods.`
         )
       );
@@ -824,7 +872,7 @@ subtask(TASK_COMPILE_SOLIDITY_EMIT_ARTIFACTS)
       },
       { artifacts, run }
     ): Promise<{
-      artifactsEmittedPerFile: ArtifactsEmittedPerFile;
+      artifactsEmittedPerFile: taskTypes.ArtifactsEmittedPerFile;
     }> => {
       const pathToBuildInfo = await artifacts.saveBuildInfo(
         compilationJob.getSolcConfig().version,
@@ -833,7 +881,7 @@ subtask(TASK_COMPILE_SOLIDITY_EMIT_ARTIFACTS)
         output
       );
 
-      const artifactsEmittedPerFile: ArtifactsEmittedPerFile =
+      const artifactsEmittedPerFile: taskTypes.ArtifactsEmittedPerFile =
         await Promise.all(
           compilationJob
             .getResolvedFiles()
@@ -961,7 +1009,7 @@ subtask(TASK_COMPILE_SOLIDITY_COMPILE_JOB)
       },
       { run }
     ): Promise<{
-      artifactsEmittedPerFile: ArtifactsEmittedPerFile;
+      artifactsEmittedPerFile: taskTypes.ArtifactsEmittedPerFile;
       compilationJob: taskTypes.CompilationJob;
       input: CompilerInput;
       output: CompilerOutput;
@@ -1108,7 +1156,7 @@ subtask(TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOBS_FAILURE_REASONS)
           const { versionPragmas } = error.file.content;
           const versionsRange = versionPragmas.join(" ");
 
-          log(`File ${sourceName} has an incompatible overriden compiler`);
+          log(`File ${sourceName} has an incompatible overridden compiler`);
 
           errorMessage += `  * ${sourceName} (${versionsRange})\n`;
         }
@@ -1262,15 +1310,43 @@ subtask(TASK_COMPILE_SOLIDITY_LOG_COMPILATION_RESULT)
   .setAction(
     async ({ compilationJobs }: { compilationJobs: CompilationJob[] }) => {
       let count = 0;
+      const evmVersions = new Set<string>();
+      const unknownEvmVersions = new Set<string>();
+
       for (const job of compilationJobs) {
         count += job
           .getResolvedFiles()
           .filter((file) => job.emitsArtifacts(file)).length;
+
+        const solcVersion = job.getSolcConfig().version;
+        const evmTarget =
+          job.getSolcConfig().settings?.evmVersion ??
+          getEvmVersionFromSolcVersion(solcVersion);
+
+        if (evmTarget !== undefined) {
+          evmVersions.add(evmTarget);
+        } else {
+          unknownEvmVersions.add(
+            `unknown evm version for solc version ${solcVersion}`
+          );
+        }
       }
+
+      const targetVersionsList = Array.from(evmVersions)
+        // Alphabetically sort evm versions. The unknown ones are added at the end
+        .sort()
+        .concat(Array.from(unknownEvmVersions).sort());
 
       if (count > 0) {
         console.log(
-          `Compiled ${count} Solidity ${pluralize(count, "file")} successfully`
+          `Compiled ${count} Solidity ${pluralize(
+            count,
+            "file"
+          )} successfully (evm ${pluralize(
+            targetVersionsList.length,
+            "target",
+            "targets"
+          )}: ${targetVersionsList.join(", ")}).`
         );
       }
     }

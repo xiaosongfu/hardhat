@@ -9,9 +9,15 @@ description: Hardhat Chai Matchers is a Hardhat plugin that builds on top of Cha
 
 Among other things, you can assert that a contract fired certain events, or that it exhibited a specific revert, or that a transaction resulted in specific changes to a wallet's Ether or token balance.
 
+:::warning
+
+The `hardhat-chai-matchers` plugin is designed to work with `hardhat-ethers`. Attempting to use it in conjunction with `hardhat-viem` results in compatibility issues.
+
+:::
+
 ## Installation
 
-::::tabsgroup{options="npm 7+,npm 6,yarn"}
+::::tabsgroup{options="npm 7+,npm 6,yarn,pnpm"}
 
 :::tab{value="npm 7+"}
 
@@ -33,6 +39,14 @@ npm install --save-dev @nomicfoundation/hardhat-chai-matchers
 
 ```
 yarn add --dev @nomicfoundation/hardhat-chai-matchers
+```
+
+:::
+
+:::tab{value="pnpm"}
+
+```
+pnpm add -D @nomicfoundation/hardhat-chai-matchers
 ```
 
 :::
@@ -140,7 +154,7 @@ await expect(contract.divideBy(1)).not.to.be.revertedWithPanic(
 
 You can omit the panic code in order to assert that the transaction reverted with _any_ panic code.
 
-The `revertedWithCustomError` matcher allows you to assert that a transaction reverted with a specific [custom error](https://docs.soliditylang.org/en/v0.8.14/contracts.html#errors-and-the-revert-statement):
+The `revertedWithCustomError` matcher allows you to assert that a transaction reverted with a specific [custom error](https://docs.soliditylang.org/en/v0.8.14/contracts.html#errors-and-the-revert-statement). Please note that this matcher does not check whether the error was emitted by the contract. It merely uses the contract interface to determine the full signature of the expected error. You can use it as follows:
 
 ```js
 await expect(contract.call()).to.be.revertedWithCustomError(
@@ -235,6 +249,10 @@ Finally, the `hexEqual` matcher accepts two hexadecimal strings and compares the
 ```js
 expect("0x00012AB").to.hexEqual("0x12ab");
 ```
+
+## Known limitations
+
+At the moment, some of these chai matchers only work correctly when Hardhat is running in [automine mode](/hardhat-network/docs/explanation/mining-modes). See [this issue](https://github.com/NomicFoundation/hardhat/issues/3203) for more details.
 
 ## Dig Deeper
 

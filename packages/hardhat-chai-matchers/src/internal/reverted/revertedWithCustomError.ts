@@ -1,10 +1,14 @@
 import type EthersT from "ethers";
 
-import { AssertionError } from "chai";
-import ordinal from "ordinal";
-
-import { ASSERTION_ABORTED } from "../constants";
-import { assertIsNotNull } from "../utils";
+import {
+  ASSERTION_ABORTED,
+  REVERTED_WITH_CUSTOM_ERROR_MATCHER,
+} from "../constants";
+import {
+  assertArgsArraysEqual,
+  assertIsNotNull,
+  preventAsyncMatcherChaining,
+} from "../utils";
 import { buildAssert, Ssfi } from "../../utils";
 import {
   decodeReturnData,
@@ -22,14 +26,15 @@ interface CustomErrorAssertionData {
 
 export function supportRevertedWithCustomError(
   Assertion: Chai.AssertionStatic,
-  utils: Chai.ChaiUtils
+  chaiUtils: Chai.ChaiUtils
 ) {
   Assertion.addMethod(
-    "revertedWithCustomError",
+    REVERTED_WITH_CUSTOM_ERROR_MATCHER,
     function (
       this: any,
       contract: EthersT.BaseContract,
-      expectedCustomErrorName: string
+      expectedCustomErrorName: string,
+      ...args: any[]
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
       const negated = this.__flags.negate;
@@ -37,11 +42,18 @@ export function supportRevertedWithCustomError(
       const { iface, expectedCustomError } = validateInput(
         this._obj,
         contract,
-        expectedCustomErrorName
+        expectedCustomErrorName,
+        args
+      );
+
+      preventAsyncMatcherChaining(
+        this,
+        REVERTED_WITH_CUSTOM_ERROR_MATCHER,
+        chaiUtils
       );
 
       const onSuccess = () => {
-        if (utils.flag(this, ASSERTION_ABORTED) === true) {
+        if (chaiUtils.flag(this, ASSERTION_ABORTED) === true) {
           return;
         }
 
@@ -54,7 +66,7 @@ export function supportRevertedWithCustomError(
       };
 
       const onError = (error: any) => {
-        if (utils.flag(this, ASSERTION_ABORTED) === true) {
+        if (chaiUtils.flag(this, ASSERTION_ABORTED) === true) {
           return;
         }
 
@@ -125,7 +137,7 @@ export function supportRevertedWithCustomError(
       );
 
       // needed for .withArgs
-      utils.flag(this, REVERTED_WITH_CUSTOM_ERROR_CALLED, true);
+      chaiUtils.flag(this, REVERTED_WITH_CUSTOM_ERROR_CALLED, true);
       this.promise = derivedPromise;
 
       this.then = derivedPromise.then.bind(derivedPromise);
@@ -139,7 +151,8 @@ export function supportRevertedWithCustomError(
 function validateInput(
   obj: any,
   contract: EthersT.BaseContract,
-  expectedCustomErrorName: string
+  expectedCustomErrorName: string,
+  args: any[]
 ): { iface: EthersT.Interface; expectedCustomError: EthersT.ErrorFragment } {
   try {
     // check the case where users forget to pass the contract as the first
@@ -166,6 +179,12 @@ function validateInput(
       );
     }
 
+    if (args.length > 0) {
+      throw new Error(
+        "`.revertedWithCustomError` expects only two arguments: the contract and the error name. Arguments should be asserted with the `.withArgs` helper."
+      );
+    }
+
     return { iface, expectedCustomError };
   } catch (e) {
     // if the input validation fails, we discard the subject since it could
@@ -178,7 +197,7 @@ function validateInput(
 export async function revertedWithCustomErrorWithArgs(
   context: any,
   Assertion: Chai.AssertionStatic,
-  _utils: Chai.ChaiUtils,
+  chaiUtils: Chai.ChaiUtils,
   expectedArgs: any[],
   ssfi: Ssfi
 ) {
@@ -204,47 +223,13 @@ export async function revertedWithCustomErrorWithArgs(
     contractInterface.decodeErrorResult(errorFragment, returnData)
   );
 
-  new Assertion(actualArgs).to.have.same.length(
-    expectedArgs.length,
-    `expected ${expectedArgs.length} args but got ${actualArgs.length}`
+  assertArgsArraysEqual(
+    Assertion,
+    expectedArgs,
+    actualArgs,
+    `"${customError.name}" custom error`,
+    "error",
+    assert,
+    ssfi
   );
-
-  for (const [i, actualArg] of actualArgs.entries()) {
-    const expectedArg = expectedArgs[i];
-    if (typeof expectedArg === "function") {
-      const errorPrefix = `The predicate for custom error argument with index ${i}`;
-      try {
-        assert(
-          expectedArg(actualArg),
-          `${errorPrefix} returned false`
-          // no need for a negated message, since we disallow mixing .not. with
-          // .withArgs
-        );
-      } catch (e) {
-        if (e instanceof AssertionError) {
-          assert(
-            false,
-            `${errorPrefix} threw an AssertionError: ${e.message}`
-            // no need for a negated message, since we disallow mixing .not. with
-            // .withArgs
-          );
-        }
-        throw e;
-      }
-    } else if (Array.isArray(expectedArg)) {
-      const expectedLength = expectedArg.length;
-      const actualLength = actualArg.length;
-      assert(
-        expectedLength === actualLength,
-        `Expected the ${ordinal(i + 1)} argument of the "${
-          customError.name
-        }" custom error to have ${expectedLength} ${
-          expectedLength === 1 ? "element" : "elements"
-        }, but it has ${actualLength}`
-      );
-      new Assertion(actualArg).to.deep.equal(expectedArg);
-    } else {
-      new Assertion(actualArg).to.equal(expectedArg);
-    }
-  }
 }

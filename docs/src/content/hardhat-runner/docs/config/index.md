@@ -182,7 +182,7 @@ The `solidity` config is an optional field that can be one of the following:
 
   - `version`: The solc version to use.
 
-  - `settings`: An object with the same schema as the `settings` entry in the [Input JSON](https://solidity.readthedocs.io/en/v0.7.4/using-the-compiler.html#input-description).
+  - `settings`: An object with the same schema as the `settings` entry in the [Input JSON](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description).
 
 - An object which describes multiple compilers and their respective configurations. It contains the following:
 
@@ -195,7 +195,7 @@ The `solidity` config is an optional field that can be one of the following:
 You can customize the different paths that Hardhat uses by providing an object to the `paths` field with the following keys:
 
 - `root`: The root of the Hardhat project. This path is resolved from `hardhat.config.js`'s directory. Default value: the directory containing the config file.
-- `sources`: The directory where your contract are stored. This path is resolved from the project's root. Default value: `'./contracts'`.
+- `sources`: The directory where your contracts are stored. This path is resolved from the project's root. Default value: `'./contracts'`.
 - `tests`: The directory where your tests are located. This path is resolved from the project's root. Default value: `'./test'`.
 
 - `cache`: The directory used by Hardhat to cache its internal stuff. This path is resolved from the project's root. Default value: `'./cache'`.
@@ -208,3 +208,20 @@ You can configure how your tests are run using the `mocha` entry, which accepts 
 ## Quickly integrating other tools from Hardhat's config
 
 Hardhat's config file will always run before any task, so you can use it to integrate with other tools, like importing `@babel/register`.
+
+## Default EVM Version
+
+The default EVM version is determined by solc's choice for a given compiler version. To specify a different EVM version, modify your `hardhat.config.js`:
+
+```js
+module.exports = {
+  solidity: {
+    version: "0.8.21",
+    settings: {
+      evmVersion: "shanghai",
+    },
+  },
+};
+```
+
+Since version `0.8.20`, solc's EVM default is `shanghai`, which can lead to issues in chains that don't support the `PUSH0` opcode. To address this, starting from `0.8.20` Hardhat defaults to `paris`. This value can be overridden by using the above configuration.

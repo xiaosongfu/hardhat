@@ -59,7 +59,7 @@ const communityPlugins: IPlugin[] = [
     authorUrl: "https://tenderly.co/",
     description:
       "Easily integrate your Hardhat project with Tenderly. Tenderly is an Ethereum monitoring, debugging and analytics platform.",
-    tags: ["Debuggin", "Monitoring", "Alerting", "Tasks", "Scripts"],
+    tags: ["Debugging", "Monitoring", "Alerting", "Tasks", "Scripts"],
   },
   {
     name: "hardhat-ethernal",
@@ -226,7 +226,14 @@ const communityPlugins: IPlugin[] = [
     authorUrl: "https://github.com/symfoni/",
     description:
       "A Hardhat plugin that generates a React hook component from your smart contracts. Hot reloaded into your React app. Deployed or not deployed. And everything typed and initialized.",
-    tags: ["Ethers", "React", "Deploy", "Typechain", "Frontend", "Web3modal"],
+    tags: [
+      "Ethers.js",
+      "React",
+      "Deploy",
+      "Typechain",
+      "Frontend",
+      "Web3modal",
+    ],
   },
   {
     name: "hardhat-etherscan-abi",
@@ -265,11 +272,12 @@ const communityPlugins: IPlugin[] = [
     tags: ["solidity", "storage-layout"],
   },
   {
-    name: "hardhat-change-network",
-    author: "David Mihal",
-    authorUrl: "https://github.com/dmihal",
-    description: "Allows changing the current network in Hardhat.",
-    tags: ["Testing"],
+    name: "hardhat-storage-layout-json",
+    npmPackage: "hardhat-storage-layout-json",
+    author: "(Aurora Labs, mostly!) + 3obby",
+    authorUrl: "https://github.com/3obby/hardhat-storage-layout-json",
+    description: "View contracts' layouts with CLI and .json output",
+    tags: ["solidity", "storage"],
   },
   {
     name: "hardhat-packager",
@@ -640,19 +648,19 @@ const communityPlugins: IPlugin[] = [
     tags: ["Tooling", "Testing", "Tasks", "Scripts", "Solc", "Compiler"],
   },
   {
-    name: "@dlsl/hardhat-migrate",
+    name: "@solarity/hardhat-migrate",
     author: "Distributed Lab",
     authorUrl: "https://distributedlab.com/",
     description:
       "Hardhat plugin to automate the deployment and verification of contracts",
-    tags: ["Deployment", "Verification", "Migration"],
+    tags: ["Deployment", "Verification", "Migration", "Solarity"],
   },
   {
     name: "hardhat-notifier",
     author: "Mister Singh",
     authorUrl: "https://www.npmjs.com/package/hardhat-notifier",
     description:
-      "Hardhat plugin to send an OSX notification when hardhat compilcation fails/succeeds",
+      "Hardhat plugin to send an OSX notification when hardhat compilation fails/succeeds",
     tags: ["Deployment", "Tooling", "Notification", "Compile"],
   },
   {
@@ -663,12 +671,12 @@ const communityPlugins: IPlugin[] = [
     tags: ["Deployment", "Testing", "Jest", "Smart Contracts", "Solidity"],
   },
   {
-    name: "@dlsl/hardhat-gobind",
+    name: "@solarity/hardhat-gobind",
     author: "Distributed Lab",
     authorUrl: "https://distributedlab.com/",
     description:
       "Hardhat plugin to generate smart contract bindings for Golang",
-    tags: ["Bindings", "Go", "Testing"],
+    tags: ["Bindings", "Go", "Testing", "Solarity"],
   },
   {
     name: "hardhat-storage-vault",
@@ -709,12 +717,12 @@ const communityPlugins: IPlugin[] = [
     tags: ["chainlink", "hardhat"],
   },
   {
-    name: "@dlsl/hardhat-markup",
+    name: "@solarity/hardhat-markup",
     author: "Distributed Lab",
     authorUrl: "https://distributedlab.com/",
     description:
       "Hardhat plugin to generate customizable smart contracts documentation",
-    tags: ["Documentation", "NatSpec", "Markdown"],
+    tags: ["Documentation", "NatSpec", "Markdown", "Solarity"],
   },
   {
     name: "hardhat-contract-clarity",
@@ -733,7 +741,7 @@ const communityPlugins: IPlugin[] = [
     tags: ["transaction", "gasPrice", "retry", "helper"],
   },
   {
-    name: "hardhat-fireblocks",
+    name: "@fireblocks/hardhat-fireblocks",
     author: "Fireblocks",
     authorUrl: "https://github.com/fireblocks",
     description: "Hardhat plugin for integrating with Fireblocks",
@@ -782,6 +790,236 @@ const communityPlugins: IPlugin[] = [
       "The hardhat-w3f plugin allows builders to build & run Web3 Functions connecting smart off-chain data with smart contracts ",
     tags: ["Gelato", "w3f", "offchain", "functions"],
   },
+  {
+    name: "hardhat-publish-typechain",
+    author: "xiaosongfu",
+    npmPackage: "hardhat-publish-typechain",
+    authorUrl: "https://github.com/xiaosongfu",
+    description: "Publish generated typechain-types to NPM",
+    tags: ["typechain-types", "npm registry"],
+  },
+  {
+    name: "hardhat-deployed-records",
+    author: "xiaosongfu",
+    npmPackage: "hardhat-deployed-records",
+    authorUrl: "https://github.com/xiaosongfu",
+    description: "Recording deployed contracts address to json file",
+    tags: ["deployed history"],
+  },
+  {
+    name: "hardhat-generate-function-selectors",
+    author: "3obby",
+    npmPackage: "hardhat-generate-function-selectors",
+    authorUrl: "https://github.com/3obby/function-selectors-plugin",
+    description:
+      "generate an output file of organized function selectors for all ABI/.json files within ./artifacts/contracts",
+    tags: ["function", "selectors", "tooling", "router"],
+  },
+  {
+    name: "hardhat-gasless-deployer",
+    author: "Ahmed Ali",
+    authorUrl: "https://twitter.com/0xAhmedAli",
+    npmPackage: "hardhat-gasless-deployer",
+    description: "Deploy contracts with Hardhat using Gas Station Network",
+    tags: ["GSN", "Gasless", "Deployment"],
+  },
+  {
+    name: "hardhat-generate-storage-namespace",
+    npmPackage: "hardhat-generate-storage-namespace",
+    author: "3obby",
+    authorUrl: "https://github.com/3obby/hardhat-generate-storage-namespace",
+    description: "Generate unique storage namespaces within a script/task",
+    tags: ["solidity", "storage", "namespace", "router"],
+  },
+  {
+    name: "@solarity/hardhat-smart-compare",
+    author: "Distributed Lab",
+    authorUrl: "https://distributedlab.com/",
+    description: "Hardhat plugin to deeply compare smart contracts",
+    tags: ["Storage Layout", "Bytecode", "Diff", "Compare", "Solarity"],
+  },
+  {
+    name: "hardhat-logger",
+    author: "kruglay",
+    npmPackage: "hardhat-logger",
+    authorUrl: "https://github.com/kruglay/hardhat-logger",
+    description:
+      "Show transaction params before hardhat send transaction to network",
+    tags: ["log", "logger", "transaction"],
+  },
+  {
+    name: "hardhat-contract-signatures",
+    author: "Axel Loupias",
+    npmPackage: "hardhat-contract-signatures",
+    authorUrl: "https://github.com/AxelLoupias",
+    description:
+      "Display different signatures that have the methods, events and errors of your contracts by console",
+    tags: ["functions", "errors", "events", "tooling", "selectors"],
+  },
+  {
+    name: "@dgma/hardhat-sol-bundler",
+    author: "Dogma Labs",
+    authorUrl: "https://github.com/dgma",
+    description: "Build and deploy only changed smartcontracts",
+    tags: ["deployment", "diff deployment", "ethers.js", "proxy"],
+  },
+  {
+    name: "@bonadocs/docgen",
+    author: "Bonadocs",
+    npmPackage: "@bonadocs/docgen",
+    authorUrl: "https://github.com/bonadocs",
+    description:
+      "Generate a beautiful and interactive documentation website for your project in seconds",
+    tags: ["Documentation", "NatSpec"],
+  },
+  {
+    name: "ethernaut-ai",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description:
+      "AI assistant that interprets user input and executes hardhat tasks",
+    tags: ["ethernaut-cli", "AI", "Agent"],
+  },
+  {
+    name: "ethernaut-ai-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-ai package",
+    tags: ["ethernaut-cli", "ui", "AI"],
+  },
+  {
+    name: "ethernaut-challenges",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description:
+      "Tasks for playing the Open Zeppelin Ethernaut challenges from the CLI",
+    tags: ["ethernaut-cli", "OpenZeppelin", "Ethernaut"],
+  },
+  {
+    name: "ethernaut-interact",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description:
+      "Tasks for sending transactions and interacting with contracts",
+    tags: ["ethernaut-cli", "contract", "send", "transactions"],
+  },
+  {
+    name: "ethernaut-interact-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-interact package",
+    tags: ["ethernaut-cli", "ui", "interact", "etherscan"],
+  },
+  {
+    name: "ethernaut-network",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Tasks for interacting with different networks",
+    tags: ["ethernaut-cli", "network"],
+  },
+  {
+    name: "ethernaut-network-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-network package",
+    tags: ["ethernaut-cli", "ui", "network"],
+  },
+  {
+    name: "ethernaut-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-network package",
+    tags: ["ethernaut-cli", "ui", "interactivity", "enquirer", "prompts"],
+  },
+  {
+    name: "ethernaut-util",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Simple, everyday utilities for Ethereum devs",
+    tags: ["ethernaut-cli", "utilities"],
+  },
+  {
+    name: "ethernaut-util-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-util package",
+    tags: ["ethernaut-cli", "ui", "utilities"],
+  },
+  {
+    name: "ethernaut-wallet",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Tasks for interacting from different Ethereum accounts",
+    tags: ["ethernaut-cli", "wallet"],
+  },
+  {
+    name: "ethernaut-wallet-ui",
+    author: "Alejandro Santander",
+    authorUrl: "https://github.com/theethernaut",
+    description: "Ui extensions for the ethernaut-wallet package",
+    tags: ["ethernaut-cli", "ui", "wallet"],
+  },
+  {
+    name: "@okxweb3/hardhat-explorer-verify",
+    author: "okx",
+    authorUrl: "https://github.com/okx",
+    description:
+      "Hardhat plugin for verifying smart contracts deployed on the EVM chains including X Layer",
+    tags: ["OKX Explorer", "Verification", "X Layer"],
+  },
+  {
+    name: "@solarity/hardhat-zkit",
+    author: "Distributed Lab",
+    authorUrl: "https://distributedlab.com/",
+    description: "The ultimate environment for building with Circom",
+    tags: ["Circom", "zk", "SnarkJS", "environment", "Solarity"],
+  },
+  {
+    name: "@solarity/hardhat-habits",
+    author: "Distributed Lab",
+    authorUrl: "https://distributedlab.com/",
+    description: "Hardhat plugin to get interfaceid",
+    tags: ["ABI", "interfaceid", "Solarity"],
+  },
+  {
+    name: "@yankeguo/hardhat-trezor",
+    author: "Yanke G.",
+    authorUrl: "https://yankeguo.com",
+    description: "Hardhat plugin for the Trezor hardware wallet",
+    tags: ["Trezor", "Wallet"],
+  },
+  {
+    name: "hardhat-switch-network",
+    author: "0xNeshi",
+    authorUrl: "https://github.com/0xNeshi",
+    description:
+      "Hardhat plugin for enabling on-the-fly network switching within your Hardhat scripts and tasks",
+    tags: ["Tasks", "Scripts", "Testing"],
+  },
+  {
+    name: "@medga/hardhat-clone",
+    author: "The MEDGA Team",
+    authorUrl: "https://medga.org",
+    description:
+      "Clone an on-chain contract and integrate into your Hardhat project",
+    tags: ["etherscan", "clone", "verified contract"],
+  },
+  {
+    name: "hardhat-tx-decoder",
+    author: "Axel Loupias",
+    npmPackage: "hardhat-tx-decoder",
+    authorUrl: "https://github.com/AxelLoupias",
+    description:
+      "Simplifies the debugging process by extracting transaction details, decoding contract events, and identifying revert reasons",
+    tags: [
+      "functions",
+      "errors",
+      "events",
+      "tooling",
+      "decoder",
+      "transaction",
+    ],
+  },
 ];
 
 const officialPlugins: IPlugin[] = [
@@ -789,8 +1027,17 @@ const officialPlugins: IPlugin[] = [
     name: "@nomicfoundation/hardhat-toolbox",
     author: "Nomic Foundation",
     authorUrl: "https://twitter.com/NomicFoundation",
-    description: "Nomic Foundation's recommended bundle of Hardhat plugins",
-    tags: ["Hardhat", "Setup"],
+    description:
+      "Nomic Foundation's recommended bundle of Hardhat plugins (ethers based)",
+    tags: ["Hardhat", "Setup", "Ethers.js"],
+  },
+  {
+    name: "@nomicfoundation/hardhat-toolbox-viem",
+    author: "Nomic Foundation",
+    authorUrl: "https://twitter.com/NomicFoundation",
+    description:
+      "Nomic Foundation's recommended bundle of Hardhat plugins (viem based)",
+    tags: ["Hardhat", "Setup", "viem"],
   },
   {
     name: "@nomicfoundation/hardhat-chai-matchers",
@@ -805,6 +1052,13 @@ const officialPlugins: IPlugin[] = [
     authorUrl: "https://twitter.com/NomicFoundation",
     description: "Injects ethers.js into the Hardhat Runtime Environment",
     tags: ["Ethers.js", "Testing", "Tasks", "Scripts"],
+  },
+  {
+    name: "@nomicfoundation/hardhat-viem",
+    author: "Nomic Foundation",
+    authorUrl: "https://twitter.com/NomicFoundation",
+    description: "Makes it easier to use viem in a Hardhat project",
+    tags: ["viem", "Testing", "Tasks", "Scripts"],
   },
   {
     name: "@nomicfoundation/hardhat-verify",
@@ -863,6 +1117,14 @@ const officialPlugins: IPlugin[] = [
     author: "Nomic Foundation",
     authorUrl: "https://twitter.com/NomicFoundation",
     description: "Injects Web3 1.x into the Hardhat Runtime Environment",
+    tags: ["Web3.js", "Testing", "Tasks", "Scripts"],
+  },
+  {
+    name: "@nomicfoundation/hardhat-web3-v4",
+    author: "ChainSafe and Nomic Foundation",
+    npmPackage: "@nomicfoundation/hardhat-web3-v4",
+    authorUrl: "https://twitter.com/ChainSafeth",
+    description: "Injects Web3 4.x into the Hardhat Runtime Environment",
     tags: ["Web3.js", "Testing", "Tasks", "Scripts"],
   },
   {

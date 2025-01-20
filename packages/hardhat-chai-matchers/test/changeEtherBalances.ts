@@ -1,10 +1,12 @@
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import type { Token } from "../src/internal/changeTokenBalance";
+import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import type { ChangeEtherBalance } from "./contracts";
+
 import { expect, AssertionError } from "chai";
 import path from "path";
 import util from "util";
 
 import "../src/internal/add-chai-matchers";
-import { ChangeEtherBalance } from "./contracts";
 import { useEnvironment, useEnvironmentWithNode } from "./helpers";
 
 describe("INTEGRATION: changeEtherBalances matcher", function () {
@@ -26,6 +28,7 @@ describe("INTEGRATION: changeEtherBalances matcher", function () {
     let receiver: HardhatEthersSigner;
     let contract: ChangeEtherBalance;
     let txGasFees: number;
+    let mockToken: Token;
 
     beforeEach(async function () {
       const wallets = await this.hre.ethers.getSigners();
@@ -41,6 +44,11 @@ describe("INTEGRATION: changeEtherBalances matcher", function () {
         "hardhat_setNextBlockBaseFeePerGas",
         ["0x0"]
       );
+
+      const MockToken = await this.hre.ethers.getContractFactory<[], Token>(
+        "MockToken"
+      );
+      mockToken = await MockToken.deploy();
     });
 
     describe("Transaction Callback", () => {
@@ -97,9 +105,58 @@ describe("INTEGRATION: changeEtherBalances matcher", function () {
               gasPrice: 1,
               value: 200,
             })
+          ).to.changeEtherBalances([sender, receiver], [-200n, 200n]);
+        });
+
+        it("Should pass when given a predicate", async () => {
+          await expect(() =>
+            sender.sendTransaction({
+              to: receiver.address,
+              gasPrice: 1,
+              value: 200,
+            })
           ).to.changeEtherBalances(
             [sender, receiver],
-            [BigInt("-200"), BigInt(200)]
+            ([senderDiff, receiverDiff]: bigint[]) =>
+              senderDiff === -200n && receiverDiff === 200n
+          );
+        });
+
+        it("Should fail when the predicate returns false", async () => {
+          await expect(
+            expect(() =>
+              sender.sendTransaction({
+                to: receiver.address,
+                gasPrice: 1,
+                value: 200,
+              })
+            ).to.changeEtherBalances(
+              [sender, receiver],
+              ([senderDiff, receiverDiff]: bigint[]) =>
+                senderDiff === -201n && receiverDiff === 200n
+            )
+          ).to.be.eventually.rejectedWith(
+            AssertionError,
+            "Expected the balance changes of the accounts to satisfy the predicate, but they didn't"
+          );
+        });
+
+        it("Should fail when the predicate returns true and the assertion is negated", async () => {
+          await expect(
+            expect(() =>
+              sender.sendTransaction({
+                to: receiver.address,
+                gasPrice: 1,
+                value: 200,
+              })
+            ).to.not.changeEtherBalances(
+              [sender, receiver],
+              ([senderDiff, receiverDiff]: bigint[]) =>
+                senderDiff === -200n && receiverDiff === 200n
+            )
+          ).to.be.eventually.rejectedWith(
+            AssertionError,
+            "Expected the balance changes of the accounts to NOT satisfy the predicate, but they did"
           );
         });
 
@@ -200,6 +257,34 @@ describe("INTEGRATION: changeEtherBalances matcher", function () {
             `Expected the ether balance of ${sender.address} (the 1st address in the list) NOT to change by -200 wei`
           );
         });
+
+        it("arrays have different length", async function () {
+          expect(() =>
+            expect(
+              sender.sendTransaction({
+                to: receiver.address,
+                gasPrice: 1,
+                value: 200,
+              })
+            ).to.changeEtherBalances([sender], ["-200", 200])
+          ).to.throw(
+            Error,
+            "The number of accounts (1) is different than the number of expected balance changes (2)"
+          );
+
+          expect(() =>
+            expect(
+              sender.sendTransaction({
+                to: receiver.address,
+                gasPrice: 1,
+                value: 200,
+              })
+            ).to.changeEtherBalances([sender, receiver], ["-200"])
+          ).to.throw(
+            Error,
+            "The number of accounts (2) is different than the number of expected balance changes (1)"
+          );
+        });
       });
 
       it("shouldn't run the transaction twice", async function () {
@@ -235,6 +320,21 @@ describe("INTEGRATION: changeEtherBalances matcher", function () {
             })
           ).to.changeEtherBalances([sender, contract], [-200, 200]);
         });
+      });
+
+      it("Should throw if chained to another non-chainable method", () => {
+        expect(() =>
+          expect(
+            sender.sendTransaction({
+              to: contract,
+              value: 200,
+            })
+          )
+            .to.changeTokenBalances(mockToken, [sender, receiver], [-50, 100])
+            .and.to.changeEtherBalances([sender, contract], [-200, 200])
+        ).to.throw(
+          /The matcher 'changeEtherBalances' cannot be chained after 'changeTokenBalances'./
+        );
       });
 
       describe("Change balance, multiple accounts", () => {

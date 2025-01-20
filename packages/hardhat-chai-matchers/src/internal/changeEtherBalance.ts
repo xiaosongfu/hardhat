@@ -4,20 +4,24 @@ import type {
   TransactionResponse,
   default as EthersT,
 } from "ethers";
+import type { BalanceChangeOptions } from "./misc/balance";
 
 import { buildAssert } from "../utils";
 import { ensure } from "./calledOnContract/utils";
 import { getAddressOf } from "./misc/account";
-import { BalanceChangeOptions } from "./misc/balance";
-import { assertIsNotNull } from "./utils";
+import { CHANGE_ETHER_BALANCE_MATCHER } from "./constants";
+import { assertIsNotNull, preventAsyncMatcherChaining } from "./utils";
 
-export function supportChangeEtherBalance(Assertion: Chai.AssertionStatic) {
+export function supportChangeEtherBalance(
+  Assertion: Chai.AssertionStatic,
+  chaiUtils: Chai.ChaiUtils
+) {
   Assertion.addMethod(
-    "changeEtherBalance",
+    CHANGE_ETHER_BALANCE_MATCHER,
     function (
       this: any,
       account: Addressable | string,
-      balanceChange: BigNumberish,
+      balanceChange: BigNumberish | ((change: bigint) => boolean),
       options?: BalanceChangeOptions
     ) {
       const { toBigInt } = require("ethers") as typeof EthersT;
@@ -25,19 +29,32 @@ export function supportChangeEtherBalance(Assertion: Chai.AssertionStatic) {
       const negated = this.__flags.negate;
       const subject = this._obj;
 
+      preventAsyncMatcherChaining(
+        this,
+        CHANGE_ETHER_BALANCE_MATCHER,
+        chaiUtils
+      );
+
       const checkBalanceChange = ([actualChange, address]: [
         bigint,
         string
       ]) => {
         const assert = buildAssert(negated, checkBalanceChange);
 
-        const expectedChange = toBigInt(balanceChange);
-
-        assert(
-          actualChange === expectedChange,
-          `Expected the ether balance of "${address}" to change by ${balanceChange.toString()} wei, but it changed by ${actualChange.toString()} wei`,
-          `Expected the ether balance of "${address}" NOT to change by ${balanceChange.toString()} wei, but it did`
-        );
+        if (typeof balanceChange === "function") {
+          assert(
+            balanceChange(actualChange),
+            `Expected the ether balance change of "${address}" to satisfy the predicate, but it didn't (balance change: ${actualChange.toString()} wei)`,
+            `Expected the ether balance change of "${address}" to NOT satisfy the predicate, but it did (balance change: ${actualChange.toString()} wei)`
+          );
+        } else {
+          const expectedChange = toBigInt(balanceChange);
+          assert(
+            actualChange === expectedChange,
+            `Expected the ether balance of "${address}" to change by ${balanceChange.toString()} wei, but it changed by ${actualChange.toString()} wei`,
+            `Expected the ether balance of "${address}" NOT to change by ${balanceChange.toString()} wei, but it did`
+          );
+        }
       };
 
       const derivedPromise = Promise.all([

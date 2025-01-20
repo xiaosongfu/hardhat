@@ -1,7 +1,7 @@
 import {
-  bufferToHex,
+  bytesToHex as bufferToHex,
   isValidAddress,
-  toBuffer,
+  toBytes,
 } from "@nomicfoundation/ethereumjs-util";
 import * as t from "io-ts";
 
@@ -22,14 +22,16 @@ export const rpcQuantity = new t.Type<bigint>(
 export const rpcData = new t.Type<Buffer>(
   "DATA",
   Buffer.isBuffer,
-  (u, c) => (isRpcDataString(u) ? t.success(toBuffer(u)) : t.failure(u, c)),
+  (u, c) =>
+    isRpcDataString(u) ? t.success(Buffer.from(toBytes(u))) : t.failure(u, c),
   t.identity
 );
 
 export const rpcHash = new t.Type<Buffer>(
   "HASH",
   (v): v is Buffer => Buffer.isBuffer(v) && v.length === HASH_LENGTH_BYTES,
-  (u, c) => (isRpcHashString(u) ? t.success(toBuffer(u)) : t.failure(u, c)),
+  (u, c) =>
+    isRpcHashString(u) ? t.success(Buffer.from(toBytes(u))) : t.failure(u, c),
   t.identity
 );
 
@@ -37,6 +39,17 @@ export const rpcStorageSlot = new t.Type<bigint>(
   "Storage slot",
   BigIntUtils.isBigInt,
   validateStorageSlot,
+  t.identity
+);
+
+// This type is necessary because objects' keys need to be either strings or numbers to be properly handled by the 'io-ts' module.
+// If they are not defined as strings or numbers, the type definition will result in an empty object without the required properties.
+// For example, instead of displaying { ke1: value1 }, it will display {}
+export const rpcStorageSlotHexString = new t.Type<string>(
+  "Storage slot hex string",
+  (x): x is string => typeof x === "string",
+  (u, c) =>
+    validateRpcStorageSlotHexString(u) ? t.success(u) : t.failure(u, c),
   t.identity
 );
 
@@ -85,7 +98,10 @@ function validateStorageSlot(u: unknown, c: t.Context): t.Validation<bigint> {
 export const rpcAddress = new t.Type<Buffer>(
   "ADDRESS",
   (v): v is Buffer => Buffer.isBuffer(v) && v.length === ADDRESS_LENGTH_BYTES,
-  (u, c) => (isRpcAddressString(u) ? t.success(toBuffer(u)) : t.failure(u, c)),
+  (u, c) =>
+    isRpcAddressString(u)
+      ? t.success(Buffer.from(toBytes(u)))
+      : t.failure(u, c),
   t.identity
 );
 
@@ -162,7 +178,7 @@ export function rpcDataToBigInt(data: string): bigint {
 }
 
 export function bufferToRpcData(
-  buffer: Buffer,
+  buffer: Uint8Array,
   padToBytes: number = 0
 ): string {
   let s = bufferToHex(buffer);
@@ -180,10 +196,14 @@ export function rpcDataToBuffer(data: string): Buffer {
     });
   }
 
-  return toBuffer(data);
+  return Buffer.from(toBytes(data));
 }
 
 // Type guards
+
+function validateRpcStorageSlotHexString(u: unknown): u is string {
+  return typeof u === "string" && /^0x([0-9a-fA-F]){64}$/.test(u);
+}
 
 function isRpcQuantityString(u: unknown): u is string {
   return (

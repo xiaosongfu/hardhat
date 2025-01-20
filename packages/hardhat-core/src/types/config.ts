@@ -57,6 +57,8 @@ export interface HardhatNetworkUserConfig {
   forking?: HardhatNetworkForkingUserConfig;
   coinbase?: string;
   chains?: HardhatNetworkChainsUserConfig;
+  enableTransientStorage?: boolean;
+  enableRip7212?: boolean;
 }
 
 export type HardhatNetworkAccountsUserConfig =
@@ -153,6 +155,8 @@ export interface HardhatNetworkConfig {
   coinbase?: string;
   chains: HardhatNetworkChainsConfig;
   allowBlocksWithSameTimestamp?: boolean;
+  enableTransientStorage?: boolean;
+  enableRip7212?: boolean;
 }
 
 export type HardhatNetworkAccountsConfig =

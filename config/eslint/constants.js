@@ -1,5 +1,5 @@
 module.exports.slowImportsCommonIgnoredModules = [
-  "chalk",
+  "picocolors",
   "debug",
   "find-up",
   "fs-extra",
@@ -7,6 +7,7 @@ module.exports.slowImportsCommonIgnoredModules = [
   "source-map-support/register",
   "@nomicfoundation/hardhat-ethers",
   "hardhat/common",
+  "hardhat/common/bigInt",
   "hardhat/config",
   "hardhat/plugins",
   "hardhat/types",
@@ -16,5 +17,7 @@ module.exports.slowImportsCommonIgnoredModules = [
   "hardhat/builtin-tasks/task-names",
   "hardhat/internal/core/errors",
   "hardhat/internal/core/providers/util",
+  "hardhat/internal/util/fs-utils",
   "hardhat/utils/contract-names",
+  "hardhat/utils/source-names",
 ];

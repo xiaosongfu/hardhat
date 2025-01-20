@@ -10,7 +10,7 @@ Hardhat projects are Node.js projects with the `hardhat` package installed and a
 
 To initialize a Node.js project you can use [npm](https://docs.npmjs.com/cli/v8) or [yarn](https://classic.yarnpkg.com/). We recommend using npm 7 or later:
 
-::::tabsgroup{options="npm 7+,npm 6,yarn"}
+::::tabsgroup{options="npm 7+,npm 6,yarn,pnpm"}
 
 :::tab{value="npm 7+"}
 
@@ -36,11 +36,19 @@ yarn init -y
 
 :::
 
+:::tab{value="pnpm"}
+
+```
+pnpm init
+```
+
+:::
+
 ::::
 
 Then you need to install Hardhat:
 
-::::tabsgroup{options="npm 7+,npm 6,yarn"}
+::::tabsgroup{options="npm 7+,npm 6,yarn,pnpm"}
 
 :::tab{value="npm 7+"}
 
@@ -66,12 +74,20 @@ yarn add --dev hardhat
 
 :::
 
-::::
-
-If you run `npx hardhat` now, you will be shown some options to facilitate project creation:
+:::tab{value="pnpm"}
 
 ```
-$ npx hardhat
+pnpm add -D hardhat
+```
+
+:::
+
+::::
+
+If you run `npx hardhat init` now, you will be shown some options to facilitate project creation:
+
+```
+$ npx hardhat init
 888    888                      888 888               888
 888    888                      888 888               888
 888    888                      888 888               888
@@ -86,6 +102,7 @@ Welcome to Hardhat v{HARDHAT_VERSION}
 ? What do you want to do? …
 ▸ Create a JavaScript project
   Create a TypeScript project
+  Create a TypeScript project (with Viem)
   Create an empty hardhat.config.js
   Quit
 ```
@@ -109,7 +126,7 @@ The initialized project has the following structure:
 
 ```
 contracts/
-scripts/
+ignition/modules/
 test/
 hardhat.config.js
 ```
@@ -117,8 +134,8 @@ hardhat.config.js
 These are the default paths for a Hardhat project.
 
 - `contracts/` is where the source files for your contracts should be.
+- `ignition/modules/` is where the Ignition modules that handle contract deployments should be.
 - `test/` is where your tests should go.
-- `scripts/` is where simple automation scripts go.
 
 If you need to change these paths, take a look at the [paths configuration section](../config/index.md#path-configuration).
 
